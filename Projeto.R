@@ -15,7 +15,7 @@ data <- diabetes
 ?diabetes
 
 class(diabetes) #data.frame
-
+summary(data)
 diabetes
 #data.frame com 403 observações e 19 variavéis
 
@@ -47,6 +47,7 @@ data
 ggplot(data,aes(x=diabetes$chol,y=diabetes$waist,size=diabetes$age,color=diabetes$glyhb))+
   geom_jitter(alpha=0.6)+scale_color_gradient(low = 'red', high = 'blue')+
   labs(title="Colesterol e cintura e idade")
+#erro
 ?ggplot
 ?aes
 
@@ -73,9 +74,9 @@ ggplot(aes(x = diabetes$Age_Cat), data = diabetes) +
 #a maioria dos individuos tem entre 30 a 40 anos
 
 
-
+#RELAÇÃO ENTRE IDADE E COMPRIMENTO DA CINTURA
 ggplot(data,aes(x=cut(diabetes$age,breaks=5),y=diabetes$waist,fill=cut(diabetes$age,breaks=5)))+
-  geom_boxplot()+scale_fill_brewer(palette="RdBu")
+  geom_boxplot()
 
 
 #correlação entre os atributos
@@ -84,24 +85,61 @@ data
 data2 <- data 
 data2
 
-#remover colunas categóricas
+#remover preditores categóricos + variável de resposta
 data2$location <- NULL
 data2$gender <- NULL
 data2$frame <- NULL
+data2$glyhb <- NULL #variável de resposta
 
 corr<-round(cor(data2, use = "na.or.complete"),1) #NA's ?
-#Fazer limpeza dos NA's ?
 corr
 ?cor
 
-
+#correlação entre preditores
 ggcorrplot(corr, 
            type = "lower", 
            lab = TRUE, 
-           lab_size = 3, 
+           lab_size = 2, 
            method="circle", 
            colors = c("red", "white", "blue"), 
            title="Diagrama de Correlação", 
            ggtheme=theme_bw)
+attach(diabetes)
 
+m1<- lm(diabetes$glyhb~. , data = diabetes)
+summary(m1) #Adjusted R-squared: 0.731
 
+#BIG P-VALUES --> REMOVE PREDICTORS
+m2<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$height + diabetes$age + diabetes$chol + 
+     diabetes$frame + diabetes$hdl + diabetes$hip + diabetes$id + diabetes$location + 
+     diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
+     diabetes$gender + diabetes$time.ppn)
+summary(m2) #Adjusted R-squared: 0.7344
+
+m3<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$age + diabetes$chol + 
+     diabetes$frame + diabetes$hdl + diabetes$hip + diabetes$id + diabetes$location + 
+     diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
+     diabetes$gender + diabetes$time.ppn)
+summary(m3) #Adjusted R-squared: 0.7367
+
+m4<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$age + diabetes$chol + 
+     diabetes$frame + diabetes$hdl + diabetes$hip + diabetes$location + 
+     diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
+     diabetes$gender + diabetes$time.ppn)
+summary(m4) #Adjusted R-squared: 0.7391
+
+m5<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$age + diabetes$chol + 
+     diabetes$frame + diabetes$hip + diabetes$location + 
+     diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
+     diabetes$gender + diabetes$time.ppn)
+summary(m5) #Adjusted R-squared: 0.7408
+
+?glm
+#LAB4
+dim(diabetes)
+diabetes$has_diabetes=rep(0,403)
+diabetes$has_diabetes[diabetes$glyhb>7]=1
+
+#encontrar o preditor que está a dar erro
+glm.fit=glm(diabetes$has_diabetes~weight+hip+gender+chol+frame, data=diabetes, family=binomial)
+summary(glm.fit)
