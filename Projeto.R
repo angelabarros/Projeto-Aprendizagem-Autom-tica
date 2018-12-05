@@ -140,6 +140,46 @@ dim(diabetes)
 diabetes$has_diabetes=rep(0,403)
 diabetes$has_diabetes[diabetes$glyhb>7]=1
 
-#encontrar o preditor que está a dar erro
-glm.fit=glm(diabetes$has_diabetes~weight+hip+gender+chol+frame, data=diabetes, family=binomial)
-summary(glm.fit)
+
+#OBJETIVO: Obter o AIC mais baixo possível
+
+#o glyhb dá erro --> variável de resposta <--- PERGUNTAR
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+ratio+location+age+gender+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip+time.ppn, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 83.357  
+
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 79.981 
+
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+gender+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 79.67 
+
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 79.614 
+
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 77.964 [valor mais baixo]
+
+
+
+class(diabetes)
+#DIVISÃO DADOS DE TREINO -- DADOS DE TESTE
+n = 201
+nr = nrow(diabetes)
+train_data_aux = split(diabetes, rep(1:ceiling(nr/n), each=n, length.out=nr)) #DIVISÃO DE METADE DOS DADOS
+train_data = train_data_aux$`1` #PRIMEIROS 201 REGISTOS
+test_data = train_data_aux$`2` #RESTANTES
+
+
+#DUVIDAS
+glm.probs=predict(glm.fit, test_data, type="response") #?
+plot(glm.probs) #?
+#LDA (?) aplica-se ao projeto?
+#QDA (?)
+#CROSS VALIDATION (+/- ?)
+#BOOTSTRAP (+/- ?)
+
+#RECURSOS
+#https://codesachin.wordpress.com/2015/08/25/linear-and-quadratic-discriminant-analysis-for-ml-statistics-newbies/
+#https://machinelearningmastery.com/linear-discriminant-analysis-for-machine-learning/
+#https://scikit-learn.org/stable/modules/lda_qda.html
+
