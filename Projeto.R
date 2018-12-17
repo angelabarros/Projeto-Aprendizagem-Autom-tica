@@ -1,15 +1,25 @@
 #PACKAGES
 install.packages("faraway")
 install.packages("tidyverse")
+update.packages("lattice")
 install.packages("ggcorrplot")
+install.packages("caret")
+install.packages("Amelia")
+install.packages("tidyr")
 
 
 #LIBRARIES
 require(ggplot2)
+require(dplyr)
 library(ggplot2)
+require(lattice)
+library(Amelia)
+library(tidyr)
 library("faraway")
 library(ggcorrplot)
 library(reshape2)
+
+library(caret)
 
 data <- diabetes
 ?diabetes
@@ -28,10 +38,19 @@ numeric.var <- sapply(diabetes, is.numeric)
 corr.matrix <- cor(diabetes[,numeric.var])
 
 
-lm(diabetes$glyhb ~ diabetes$weight + diabetes$height + diabetes$age + diabetes$chol + 
+linear_model <- lm(diabetes$glyhb ~ diabetes$weight + diabetes$height + diabetes$age + diabetes$chol + 
      diabetes$frame + diabetes$hdl + diabetes$waist + diabetes$hip + diabetes$id + diabetes$location + 
      diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
-     diabetes$gender + diabetes$time.ppn)
+     diabetes$gender + diabetes$time.ppn) #Adjusted R-squared: 0.7324
+
+
+
+
+summary(linear_model)
+plot(linear_model)
+
+
+
 
 #criar categorias para as idades
 diabetes$Age_Cat <- ifelse(diabetes$age < 20, "<20", 
@@ -44,19 +63,17 @@ diabetes$Age_Cat <- ifelse(diabetes$age < 20, "<20",
                      ifelse((diabetes$age>80) & (diabetes$age<=90), "80-90",">90"))))))))
 #data.frame com 403 observações e 20 variavéis
 data
-ggplot(data,aes(x=diabetes$chol,y=diabetes$waist,size=diabetes$age,color=diabetes$glyhb))+
-  geom_jitter(alpha=0.6)+scale_color_gradient(low = 'red', high = 'blue')+
-  labs(title="Colesterol e cintura e idade")
-#erro
-?ggplot
-?aes
 
 #nº de individuos que correspondem aos intervalos de idades criados
 table(diabetes$Age_Cat)
 
 class(diabetes$Age_Cat)
 
-hist(diabetes$waist)
+hist(diabetes$waist , main = paste(" Distribuição das medidas da cintura"), xlab = 'Cintura em inches', ylab = 'Frequência' ,col = 'blue') #NÃO GAUSSSIANO
+hist(diabetes$age, main = paste(" Distribuição das idades"), xlab = 'Idade', ylab = 'Frequência' ,col = 'red') #NÃO GAUSSIANO
+hist(diabetes$chol, main = paste(" Distribuição do colesterol"), xlab = 'Colesterol', ylab = 'Frequência' ,col = 'gray') #NÃO GAUSSIANO
+hist(diabetes$glyhb, main = paste(" Distribuição da Hemoglobina Glycosolated"), xlab = 'Glyhb', ylab = 'Frequência' ,col = 'orange') #NÃO GAUSSIANO
+
 
 diabetes$Age_Cat
 #HISTOGRAMA COM AS IDADES
@@ -106,8 +123,11 @@ ggcorrplot(corr,
            ggtheme=theme_bw)
 attach(diabetes)
 
+missmap(diabetes, main = "Missing values vs observed")
+
+
 m1<- lm(diabetes$glyhb~. , data = diabetes)
-summary(m1) #Adjusted R-squared: 0.731
+summary(m1) #Adjusted R-squared: 0.849
 
 #BIG P-VALUES --> REMOVE PREDICTORS
 m2<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$height + diabetes$age + diabetes$chol + 
@@ -133,6 +153,7 @@ m5<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$age + diabetes$chol +
      diabetes$bp.1s + diabetes$bp.1d + diabetes$bp.2d + diabetes$bp.2s + diabetes$stab.glu + diabetes$ratio + 
      diabetes$gender + diabetes$time.ppn)
 summary(m5) #Adjusted R-squared: 0.7408
+#lab3 -- predict (new data)
 
 ?glm
 #LAB4
@@ -140,26 +161,45 @@ dim(diabetes)
 diabetes$has_diabetes=rep(0,403)
 diabetes$has_diabetes[diabetes$glyhb>7]=1
 
+table(diabetes$has_diabetes)
 
 #OBJETIVO: Obter o AIC mais baixo possível
 
 #o glyhb dá erro --> variável de resposta <--- PERGUNTAR
-glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+ratio+location+age+gender+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip+time.ppn, data=diabetes, family=binomial)
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+ratio+location+age+gender+
+              height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip+time.ppn, 
+              data=diabetes, family=binomial)
 summary(glm.fit) #AIC: 83.357  
 
-glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+height+weight+frame+
+              bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
 summary(glm.fit) #AIC: 79.981 
 
-glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+gender+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+age+gender+height+weight+
+              frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
 summary(glm.fit) #AIC: 79.67 
 
-glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+frame+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+frame+bp.1s+
+              bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
 summary(glm.fit) #AIC: 79.614 
 
-glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+bp.1s+bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
-summary(glm.fit) #AIC: 77.964 [valor mais baixo]
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+hdl+height+weight+bp.1s+
+              bp.1d+bp.2s+bp.2d+waist+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC: 77.964
 
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+height+weight+bp.1s+
+              bp.1d+bp.2s+bp.2d+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC 74.084
 
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+height+weight+bp.1s+bp.1d+
+              bp.2d+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC 72.468
+
+glm.fit=glm(diabetes$has_diabetes~chol+stab.glu+height+weight+bp.1d+
+              bp.2d+hip, data=diabetes, family=binomial)
+summary(glm.fit) #AIC 70.884    MELHOR
+
+# exp(0.02225) - 1 aumento unitario de colesterol aumenta o risco de ter diabetes aumenta 2,2%
 
 class(diabetes)
 #DIVISÃO DADOS DE TREINO -- DADOS DE TESTE
@@ -169,17 +209,113 @@ train_data_aux = split(diabetes, rep(1:ceiling(nr/n), each=n, length.out=nr)) #D
 train_data = train_data_aux$`1` #PRIMEIROS 201 REGISTOS
 test_data = train_data_aux$`2` #RESTANTES
 
+#treinar o meu melhor modelo com os dados de treino
+#fazer predict sobre o resto da db
 
-#DUVIDAS
-glm.probs=predict(glm.fit, test_data, type="response") #?
-plot(glm.probs) #?
-#LDA (?) aplica-se ao projeto?
-#QDA (?)
-#CROSS VALIDATION (+/- ?)
-#BOOTSTRAP (+/- ?)
+#TODOS OS DADOS
+glm_all.probs_all_data=predict(glm.fit, type="response")             
+glm_all.probs_all_data
+glm_all.pred=rep(0,403)                                   
+glm_all.pred[glm_all.probs_all_data>0.5]=1        
+table(glm_all.pred, diabetes$has_diabetes)      
 
-#RECURSOS
+#DADOS DE TESTE
+glm.probs_teste=predict(glm.fit, test_data, type="response")                   
+glm.probs_teste
+glm.pred=rep(0,201)                             
+glm.pred[glm.probs_teste>0.5]=1                   
+table(glm.pred, test_data$has_diabetes)          
+
+#DADOS DE TREINO
+glm2.probs_treino=predict(glm.fit, train_data,type="response")
+glm2.probs_treino
+glm2.pred=rep(0,201)
+glm2.pred[glm2.probs_treino>0.5]=1  
+table(glm2.pred, train_data$has_diabetes) 
+
+
+
+##NEW ATTEMPT
+glm_new.fit=glm(diabetes$has_diabetes~chol+stab.glu+height+weight+bp.1d+bp.2d+hip, data=diabetes, family=binomial)
+summary(glm_new.fit)
+
+PredictTrain <- predict(glm_new.fit, type = "response") #qd coloco os dados da erro
+summary(PredictTrain)
+
+teste_140 <- diabetes[1:140,]
+
+empty_df = diabetes[FALSE,]
+
+for (i in 1:nrow(diabetes)) {
+  cholesterol_aux <- diabetes[2]$chol[i]
+  stab.glu_aux    <- diabetes[3]$stab.glu[i]
+  height_aux      <- diabetes[10]$height[i]
+  weight_aux      <- diabetes[11]$weight[i]
+  bp.1d_aux       <- diabetes[14]$bp.1d[i]
+  bp.2d_aux       <- diabetes[16]$bp.2d[i]
+  
+  if (!is.na(cholesterol_aux) && !is.na(stab.glu_aux) && !is.na(height_aux)
+      && !is.na(weight_aux) && !is.na(bp.1d_aux) && !is.na(bp.2d_aux)) {
+    empty_df <- bind_rows(empty_df, diabetes[i,])
+  }
+  
+  
+  cholesterol_aux <- NA
+  stab.glu_aux    <- NA
+  height_aux      <- NA
+  weight_aux      <- NA
+  bp.1d_aux       <- NA
+  bp.2d_aux       <- NA
+  
+}
+
+
+auxiliar <- empty_df[1:140,]
+
+#tapply(PredictTrain, teste_140$has_diabetes, mean)   
+#tapply(PredictTrain, auxiliar$, mean) 
+
+
+threshold_0.5 <- table(auxiliar$has_diabetes, PredictTrain > 0.5)
+threshold_0.5
+
+accuracy_0.5 <- round(sum(diag(threshold_0.5))/sum(threshold_0.5),2)
+sprintf("Accuracy is %s",accuracy_0.5)
+
+
+PredictTest <- predict(glm_new.fit, type = "response", newdata = test_data)
+test_tab <- table(test_data$has_diabetes, PredictTest > 0.5)
+test_tab
+
+accuracy_test <- round(sum(diag(test_tab))/sum(test_tab),2)
+sprintf("Accuracy on test set is %s", accuracy_test)
+
+
+#########ANOVA#############
+anova(glm.fit, test = "Chisq")
+#A large p-value here indicates that the model without the variable explains 
+#more or less the same amount of variation. 
+
+
+table(glm.probs_teste)
+
+
+
+################################################################################ VER ESTA QUESTÃO COM A PROF.
+glm_all.probs_all_data <- ifelse(glm_all.probs_all_data > 0.5,1,0)
+misClasificError <- mean(glm_all.probs_all_data != auxiliar$has_diabetes)
+print(paste('Accuracy',1-misClasificError)) #0,907 accuracy ?
+
+
+
+#LDA preciso de + "categorias finais" - pré-diabético    NAO 
+#preditores tem que ser aproximadamente gaussianos
+
+#definir threshold para testar o glm
+#MSE(linear) e da tabela de confusao(regressao logistica)
+
+
+#MATÉRIA
 #https://codesachin.wordpress.com/2015/08/25/linear-and-quadratic-discriminant-analysis-for-ml-statistics-newbies/
 #https://machinelearningmastery.com/linear-discriminant-analysis-for-machine-learning/
 #https://scikit-learn.org/stable/modules/lda_qda.html
-
