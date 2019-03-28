@@ -97,7 +97,7 @@ ggplot(data,aes(x=cut(diabetes$age,breaks=5),y=diabetes$waist,fill=cut(diabetes$
 
 
 #correlação entre os atributos
-corr<-round(cor(data),1) #erro
+corr<-round(cor(data),1) #erro - é suposto
 data
 data2 <- data 
 data2
@@ -128,6 +128,8 @@ missmap(diabetes, main = "Missing values vs observed")
 
 m1<- lm(diabetes$glyhb~. , data = diabetes)
 summary(m1) #Adjusted R-squared: 0.849
+
+
 
 #BIG P-VALUES --> REMOVE PREDICTORS
 m2<- lm(diabetes$glyhb ~ diabetes$weight + diabetes$height + diabetes$age + diabetes$chol + 
@@ -301,21 +303,9 @@ table(glm.probs_teste)
 
 
 
-################################################################################ VER ESTA QUESTÃO COM A PROF.
+################################################################################ 
 glm_all.probs_all_data <- ifelse(glm_all.probs_all_data > 0.5,1,0)
 misClasificError <- mean(glm_all.probs_all_data != auxiliar$has_diabetes)
-print(paste('Accuracy',1-misClasificError)) #0,907 accuracy ?
+print(paste('Accuracy',1-misClasificError)) #0,907 accuracy 
 
 
-
-#LDA preciso de + "categorias finais" - pré-diabético    NAO 
-#preditores tem que ser aproximadamente gaussianos
-
-#definir threshold para testar o glm
-#MSE(linear) e da tabela de confusao(regressao logistica)
-
-
-#MATÉRIA
-#https://codesachin.wordpress.com/2015/08/25/linear-and-quadratic-discriminant-analysis-for-ml-statistics-newbies/
-#https://machinelearningmastery.com/linear-discriminant-analysis-for-machine-learning/
-#https://scikit-learn.org/stable/modules/lda_qda.html
